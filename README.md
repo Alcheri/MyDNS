@@ -51,6 +51,7 @@ Using
 ## Example
 
 >
-><Barry> @dns crawl-203-208-60-1.googlebot.com\
-><Borg>  <b><font color="teal">DNS:</font></b> crawl-203-208-60-1.googlebot.com resolves to [203.208.60.1] <b><font color="teal">LOC:</font></b> City:Beijing State:Beijing Long:116.37922668457031 Lat:39.91175842285156 Country Code:CN Country:China <img src="local/china.png" width="17" height="17"> Post/Zip Code:100000
+> \<Barry\> @dns crawl-203-208-60-1.googlebot.com\
+> \<Borg\>  <b><font color="#008080"> DNS: </font></b> crawl-203-208-60-1.googlebot.com resolves to [203.208.60.1] <b><font color="#008080"> LOC: </font></b> City:Beijing State:Beijing Long:116.37922668457031 
+  Lat:39.91175842285156 Country Code:CN Country:China <img src="local/china.png" width="17" height="17"> Post/Zip Code:100000
 >
