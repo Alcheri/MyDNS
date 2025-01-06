@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2016 - 2021, Barry Suridge
+# Copyright © 2016 - 2025, Barry Suridge
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ import ipaddress
 from .local.colour import bold, teal
 
 from supybot.commands import *
-from supybot import callbacks
+from supybot import callbacks, log
 import supybot.ircutils as utils
 
 try:
@@ -62,17 +62,45 @@ except ImportError:
     #  FUNCTIONS  #
     ###############
 
+dns = bold(teal('DNS: '))
+loc = bold(teal('LOC: '))
+
 #XXX https://datatracker.ietf.org/doc/html/rfc2812#section-2.3.1
-special_chars = (
-    '-',
-    '[',
-    ']',
-    '\\',
-    '`',
-    '^',
-    '{',
-    '}',
-    '_')
+special_chars = ('-', '[', ']', '\\', '`', '^', '{', '}', '_')
+
+def format_location(data, address):
+    parts = []
+
+    if data['city']:
+        parts.append(f"City: {data['city']} ")
+
+    if data['region_name']:
+        parts.append(f"State: {data['region_name']} ")
+
+    if data['longitude']:
+        parts.append(f"Long: {data['longitude']} ")
+
+    if data['latitude']:
+        parts.append(f"Lat: {data['latitude']} ")
+
+    if data['country_code']:
+        parts.append(f"Country Code: {data['country_code']} ")
+
+    if data['country_name']:
+        parts.append(f"Country: {data['country_name']} ")
+
+    if 'location' in data and 'country_flag_emoji' in data['location']:
+        parts.append(data['location']['country_flag_emoji'])
+
+    if data['zip']:
+        parts.append(f" Post/Zip Code: {data['zip']}")
+
+    try:
+        return ''.join(parts)
+    except TypeError:
+        log.error('MyDNS: Could not resolve %s', address)
+        raise callbacks.Error(f'Could not resolve {address}')
+
 
 def is_nick(nick):
     """ Checks to see if a nickname `nick` is valid.
@@ -114,7 +142,7 @@ class MyDNS(callbacks.Plugin):
     @wrap(['text'])
     def dns(self, irc, msg, args, address):
         """<hostname | Nick | URL | IPv4 or IPv6>
-        An alternative to Supybot's DNS function.
+        An alternative to Limnoria's DNS function.
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library
         """
@@ -157,9 +185,6 @@ class MyDNS(callbacks.Plugin):
         ipaddress = result[0][4][0]
         geoip = self.geoip(ipaddress)
 
-        dns = bold(teal('DNS: '))
-        loc = bold(teal('LOC: '))
-
         return (f'{dns}{host} resolves to [{ipaddress}] {loc}{geoip}')
 
     def gethostbyaddr(self, ip):
@@ -170,8 +195,6 @@ class MyDNS(callbacks.Plugin):
             hostname = hostname + ' <> ' + address[0]
             geoip = self.geoip(address[0])
             shortname = hostname.split('.')[0]
-            dns = bold(teal('DNS: '))
-            loc = bold(teal('LOC: '))
             return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
         except socket.error as err:  # Catch failed address lookup.
             self.log.error('MyDNS: Could not resolve  %s: %s', ip, err)
@@ -203,23 +226,7 @@ class MyDNS(callbacks.Plugin):
             )
         else:
             data = json.loads(response.data.decode("utf-8"))
-
-        city    = 'City:%s ' % data['city'] if data['city'] else ''
-        state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
-        long    = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
-        lat     = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
-        code    = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
-        country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
-        flag    = data['location']['country_flag_emoji']
-        zip     = ' Post/Zip Code:%s' % data['zip'] if data['zip'] else ''
-
-        try:
-            s = ''
-            seq = [city, state, long, lat, code, country, flag, zip]
-            return (s.join( seq ))
-        except TypeError:
-            self.log.error('MyDNS: Could not resolve %s', address)
-            raise callbacks.Error(f'Could not resolve {address}')
+        return(f"{format_location(data, address)}")
 
 Class = MyDNS
 
