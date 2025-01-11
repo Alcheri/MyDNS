@@ -26,15 +26,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import json    # JavaScript Object Notation
+import json  # JavaScript Object Notation
 import socket  # Low-level networking interface
 
-#XXX For Python 3.4 and later
+# XXX For Python 3.4 and later
 # HTTP client for Python
 try:
     import urllib3
 except ImportError as e:
-    raise Exception(f'Cannot import module: {e}')
+    raise Exception(f"Cannot import module: {e}")
 
 from urllib3.exceptions import HTTPError
 
@@ -54,7 +54,8 @@ import supybot.ircutils as utils
 
 try:
     from supybot.i18n import PluginInternationalization
-    _ = PluginInternationalization('MyDNS')
+
+    _ = PluginInternationalization("MyDNS")
 except ImportError:
     _ = lambda x: x
 
@@ -62,48 +63,51 @@ except ImportError:
     #  FUNCTIONS  #
     ###############
 
-dns = bold(teal('DNS: '))
-loc = bold(teal('LOC: '))
+dns = bold(teal("DNS: "))
+loc = bold(teal("LOC: "))
 
-#XXX https://datatracker.ietf.org/doc/html/rfc2812#section-2.3.1
+# XXX https://datatracker.ietf.org/doc/html/rfc2812#section-2.3.1
+# fmt: off
 special_chars = ('-', '[', ']', '\\', '`', '^', '{', '}', '_')
+# fmt: on
+
 
 def format_location(data, address):
     parts = []
 
-    if data['city']:
+    if data["city"]:
         parts.append(f"City: {data['city']} ")
 
-    if data['region_name']:
+    if data["region_name"]:
         parts.append(f"State: {data['region_name']} ")
 
-    if data['longitude']:
+    if data["longitude"]:
         parts.append(f"Long: {data['longitude']} ")
 
-    if data['latitude']:
+    if data["latitude"]:
         parts.append(f"Lat: {data['latitude']} ")
 
-    if data['country_code']:
+    if data["country_code"]:
         parts.append(f"Country Code: {data['country_code']} ")
 
-    if data['country_name']:
+    if data["country_name"]:
         parts.append(f"Country: {data['country_name']} ")
 
-    if 'location' in data and 'country_flag_emoji' in data['location']:
-        parts.append(data['location']['country_flag_emoji'])
+    if "location" in data and "country_flag_emoji" in data["location"]:
+        parts.append(data["location"]["country_flag_emoji"])
 
-    if data['zip']:
+    if data["zip"]:
         parts.append(f" Post/Zip Code: {data['zip']}")
 
     try:
-        return ''.join(parts)
+        return "".join(parts)
     except TypeError:
-        log.error('MyDNS: Could not resolve %s', address)
-        raise callbacks.Error(f'Could not resolve {address}')
+        log.error("MyDNS: Could not resolve %s", address)
+        raise callbacks.Error(f"Could not resolve {address}")
 
 
 def is_nick(nick):
-    """ Checks to see if a nickname `nick` is valid.
+    """Checks to see if a nickname `nick` is valid.
     According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
     with either a letter or one of the allowed special characters, and after
     that it may consist of any combination of letters, numbers, or allowed
@@ -116,9 +120,10 @@ def is_nick(nick):
             return False
     return True
 
+
 def is_ip(s):
     """Returns whether or not a given string is a
-       valid IPv4 or IPv6 address.
+    valid IPv4 or IPv6 address.
     """
     try:
         ipaddress.ip_address(s)
@@ -126,9 +131,9 @@ def is_ip(s):
     except ValueError:
         return False
 
+
 class MyDNS(callbacks.Plugin):
-    """An alternative to Supybot's DNS function.
-    """
+    """An alternative to Supybot's DNS function."""
 
     def __init__(self, irc):
         super().__init__(irc)
@@ -139,7 +144,7 @@ class MyDNS(callbacks.Plugin):
     #    MAIN    #
     ##############
 
-    @wrap(['text'])
+    @wrap(["text"])
     def dns(self, irc, msg, args, address):
         """<hostname | Nick | URL | IPv4 or IPv6>
         An alternative to Limnoria's DNS function.
@@ -148,10 +153,10 @@ class MyDNS(callbacks.Plugin):
         """
         # Check if we should be 'enabled' in a channel.
         # config channel #channel supybot.plugins.MyDNS.enable True or False (On or Off)
-        if not self.registryValue('enable', msg.channel, irc.network):
+        if not self.registryValue("enable", msg.channel, irc.network):
             return
 
-        self.log.info('MyDNS: running on %s/%s', irc.network, msg.channel)
+        self.log.info("MyDNS: running on %s/%s", irc.network, msg.channel)
 
         if is_ip(address):
             irc.reply(self.gethostbyaddr(address), prefixNick=False)
@@ -159,7 +164,9 @@ class MyDNS(callbacks.Plugin):
             nick = address
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
-                (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
+                (nick, _, host) = utils.splitHostmask(
+                    userHostmask
+                )  # Returns the nick and host of a user hostmask.
                 irc.reply(self.gethostbyaddr(host), prefixNick=False)
             except KeyError:
                 irc.reply(f"[{nick}] is unknown.", prefixNick=False)
@@ -179,42 +186,42 @@ class MyDNS(callbacks.Plugin):
         try:
             result = socket.getaddrinfo(host, None)
         except socket.error as err:  # Catch failed address lookup.
-            self.log.error('MyDNS: Could not resolve  %s: %s', host, err)
-            return (f'Could not resolve {host}: {err}')
+            self.log.error("MyDNS: Could not resolve  %s: %s", host, err)
+            return f"Could not resolve {host}: {err}"
 
         ipaddress = result[0][4][0]
         geoip = self.geoip(ipaddress)
 
-        return (f'{dns}{host} resolves to [{ipaddress}] {loc}{geoip}')
+        return f"{dns}{host} resolves to [{ipaddress}] {loc}{geoip}"
 
     def gethostbyaddr(self, ip):
-        """Do a reverse lookup for ip.
-        """
+        """Do a reverse lookup for ip."""
         try:
             (hostname, _, address) = socket.gethostbyaddr(ip)
-            hostname = hostname + ' <> ' + address[0]
+            hostname = hostname + " <> " + address[0]
             geoip = self.geoip(address[0])
-            shortname = hostname.split('.')[0]
-            return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
+            shortname = hostname.split(".")[0]
+            return f"{dns} <{shortname}> [{hostname}] {loc} {geoip}"
         except socket.error as err:  # Catch failed address lookup.
-            self.log.error('MyDNS: Could not resolve  %s: %s', ip, err)
-            return (f'Could not resolve {ip}: {err}')
+            self.log.error("MyDNS: Could not resolve  %s: %s", ip, err)
+            return f"Could not resolve {ip}: {err}"
 
     def geoip(self, address):
         """Search for the geolocation of IP addresses.
         Accuracy not guaranteed.
         """
-        apikey = self.registryValue('ipstackAPI')
+        apikey = self.registryValue("ipstackAPI")
 
         if not apikey:
-            raise callbacks.Error( \
-                'Please configure the ipstack API key in config plugins.MyDNS.ipstackAPI')
+            raise callbacks.Error(
+                "Please configure the ipstack API key in config plugins.MyDNS.ipstackAPI"
+            )
 
         # Creating a PoolManager instance for sending requests.
         http = urllib3.PoolManager()
 
         # Set the URI
-        uri = 'http://api.ipstack.com/' + address + '?access_key=' + apikey
+        uri = "http://api.ipstack.com/" + address + "?access_key=" + apikey
 
         # Sending a GET request and getting back response as HTTPResponse object
         response = http.request("GET", uri, timeout=1)
@@ -222,11 +229,12 @@ class MyDNS(callbacks.Plugin):
         # 'OK', 'Request fulfilled, document follows'
         if response.status != 200:
             raise HTTPError(
-                'Request failed with status {0}'.format(response.status),
+                "Request failed with status {0}".format(response.status),
             )
         else:
             data = json.loads(response.data.decode("utf-8"))
-        return(f"{format_location(data, address)}")
+        return f"{format_location(data, address)}"
+
 
 Class = MyDNS
 
