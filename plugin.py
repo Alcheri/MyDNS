@@ -136,7 +136,8 @@ class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function."""
 
     def __init__(self, irc):
-        super().__init__(irc)
+        self.__parent = super(MyDNS, self)
+        self.__parent.__init__(irc)
 
     threaded = True
 
