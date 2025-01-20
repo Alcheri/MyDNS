@@ -34,7 +34,7 @@ import socket  # Low-level networking interface
 try:
     import urllib3
 except ImportError as e:
-    raise Exception(f"Cannot import module: {e}")
+    raise ImportError(f"Cannot import module: {e}")
 
 from urllib3.exceptions import HTTPError
 
