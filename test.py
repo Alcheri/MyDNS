@@ -5,10 +5,14 @@
 
 import unittest
 
-from supybot.test import *
+from supybot.test import PluginTestCase as SupybotPluginTestCase
+
+SupybotPluginTestCase.__test__ = False
 
 
-class MyDNSTestCase(PluginTestCase):
+class MyDNSTestCase(SupybotPluginTestCase):
+    __test__ = False
+
     plugins = ("MyDNS",)
 
 
